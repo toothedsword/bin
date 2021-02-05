@@ -1,0 +1,29 @@
+#!/bin/perl
+
+my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
+$year = $year+1900;
+$mon ++; 
+my $time = "b$year-$mon-${mday}_$hour-$min-$sec";
+
+my $b = shift;
+$b = $time if !defined($b);
+print("branch=$b\n");
+
+system("git init");
+system("git checkout -b $b");
+system("git add .");
+system("git commit -am \"\`date\`\"");
+
+system(" 
+ssh ads\@10.24.45.34 << HP
+mkdir /home/ads/ADS_loc2cma_$b
+cd /home/ads/ADS_loc2cma_$b
+git init 
+git remote add origin ssh://git\@git.piesat.cn:10002/QXYG/algorithm/ADS/ADS_cma2loc.git
+git pull origin $b
+ssh ads\@10.24.238.160 << ADS
+mkdir /mnt/swapdata/ADSCODE/ADS/ADS_loc2cma_$b
+ADS
+scp -r * ads\@10.24.238.160:/mnt/swapdata/ADSCODE/ADS/ADS_loc2cma_$b/
+HP
+");

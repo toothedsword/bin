@@ -1,0 +1,33 @@
+#!/bin/env perl
+use v5.10;
+
+use File::stat;
+use Time::localtime;
+use Time::JulianDay;
+use Time::JulianDay_add;
+
+my @file = @ARGV[0..$#ARGV-1];
+my $dt = $ARGV[$#ARGV];
+
+if ($dt =~ /\//) {
+    my ($num,$den) = $dt =~ /(.*)\/(.*)/;
+    $dt = $num/$den;
+}
+
+foreach my $file (@file) {
+    my $st = stat($file);
+
+    my ($sec,$min,$hour,$mday,$mon,$year) = gmtime();
+    $year = $year+1900;
+    $mon ++;
+
+    my $jdc = julday($year,$mon,$mday,$hour,$min,$sec);
+    my $jda = $$st[8]/24/3600+julday(1970,1,1,0,0,0);
+
+    if ($jdc - $jda > $dt) {
+        say $file;
+        say $jdc - $jda;
+        my $cmd = "rm -rf '$file'";
+        `$cmd`;
+    }
+}

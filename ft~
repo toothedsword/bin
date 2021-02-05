@@ -1,0 +1,18 @@
+#!/usr/local/bin/perl
+
+my $file = shift;
+my $str = shift;
+
+my @files = glob($file);
+foreach my $f (@files) {
+  open(DATA, "<$f") or die "file.txt 文件无法打开, $!";
+  my $i = 0;
+  while(<DATA>){
+     $i++;
+     if ($_ =~ /$str/) {
+       print "$f\n";
+       print "$i: $_\n";
+     }
+  }
+}
+

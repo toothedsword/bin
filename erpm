@@ -1,0 +1,7 @@
+#!/bin/env perl
+
+my $file = shift;
+
+foreach my $fn (glob("$file")) {
+    system("rpm2cpio $fn | cpio -idmv");
+}

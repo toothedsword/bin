@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+
+my $file = shift;
+my $str = shift;
+
+my @files = `find ./ -name "$file"`;
+foreach my $f (@files) {
+  open(DATA, "<$f") or die "can not open $file, $!";
+  my $i = 0;
+  while(<DATA>){
+     $i++;
+     if ($_ =~ /$str/i) {
+       chomp($f);
+       chomp($_);
+       print "$f\n";
+       print "$i: $_\n";
+     }
+  }
+}
+

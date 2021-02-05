@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+
+system('mkdir -p /run/media/leon/2t');
+system('mount -t ntfs-3g /dev/disk/by-uuid/BCFE07BAFE076C48 /run/media/leon/2t');
+

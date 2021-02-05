@@ -1,0 +1,1 @@
+sudo mount -o username=qixiangyaogan,password=qixiangyaogan123 //10.1.100.26/qixiang /qixiang

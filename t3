@@ -1,0 +1,6 @@
+#!/bin/env perl
+
+chdir "~/";
+system("rm -f .tmux*");
+system("ln -sf ~/tmux/rc3/.tmux.conf ./");
+system("~/tmux/20200323/bin/tmux");

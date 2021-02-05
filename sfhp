@@ -1,0 +1,4 @@
+#!/usr/bin/perl
+ 
+my $file = shift;
+system("scp -r 10.1.6.133:$file ./");

@@ -1,0 +1,8 @@
+#!/usr/local/bin/perl
+
+my $cmd = shift;
+open my $hd,"|-","matlab -nodesktop -nosplash -nodisplay" or die "cannot open";
+print {$hd} "$cmd\n";
+print {$hd} "exit\n"; 
+close ($hd); 
+

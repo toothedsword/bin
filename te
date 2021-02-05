@@ -1,0 +1,11 @@
+#!/bin/perl
+
+my $t = shift;
+my ($out) = $t =~ /\>\s*([^\s]+)/; 
+
+my $pwd = `pwd`;
+chomp($pwd);
+
+$out = "$pwd/$out";
+system("ln -sf $out ~/.tmux.run.out");
+system($t);

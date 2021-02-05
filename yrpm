@@ -1,0 +1,11 @@
+#!/bin/env python3
+
+import os
+import sys
+import glob
+
+file = sys.argv[1]
+files = glob.glob(file)
+
+for file in files:
+    os.system("rpm2cpio "+file+" | cpio -idmv")

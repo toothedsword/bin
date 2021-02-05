@@ -1,0 +1,14 @@
+#!/bin/perl
+
+my $t = shift;
+
+if ($t =~ /.*\.pdf$/ 
+    or $t =~ /.*\.docx{0,1}$/ 
+    or $t =~ /.*\.pptx{0,1}$/ 
+    or $t =~ /.*\.xlsx{0,1}$/) {
+    # system("wps '$t'");
+}
+open(OUT, ">", "/home/leon/openfile_out");
+print OUT $t;
+close(OUT);
+

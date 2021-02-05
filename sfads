@@ -1,0 +1,4 @@
+#!/usr/bin/perl
+ 
+my $file = shift;
+system("scp -r ads\@10.1.100.92:$file ./");

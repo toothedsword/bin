@@ -1,0 +1,12 @@
+#!/bin/perl
+
+chdir "/home/leon/data/natapp-tmp/";
+system("git pull hub master");
+
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
+
+my $cmd = "ssh -p $p server.natappfree.cc";
+print $cmd,"\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+
+system($cmd);

@@ -1,0 +1,7 @@
+#!/bin/perl
+
+my $t = shift;
+
+my ($f) = $t =~ /\((viewnior.*\.png)\)/;
+system("$f") if defined($f);
+

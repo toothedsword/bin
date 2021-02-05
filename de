@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+
+use v5.10;
+
+# get the containerID name 
+my $containerID = shift;
+if (!defined($containerID)) {
+    my @rt = `docker ps -a`;
+    say $rt[1];
+    ($containerID) = $rt[1] =~ /^\s*([^\s]+)/;
+    say $containerID;
+}
+
+system("docker exec -it $containerID bash");
+

@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+ 
+my $file = shift;
+my $d0 = shift;
+my $d1;
+$d1 = "~/$d0" if !($d0 =~ /^\//);
+$d1 = $d0 if $d0 =~ /^\//;
+
+system("scp -r $file ads\@10.1.100.92:$d1/");

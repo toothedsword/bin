@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+
+use v5.10;
+
+chdir "/home/leon/doc/";
+system("perl ./doc.pl");
+
+chdir "/home/leon/";
+system("vim ~/doc/note.doc");

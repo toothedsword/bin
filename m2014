@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+/home/leon/matlab2014b/bin/matlab -nodesktop -nosplash

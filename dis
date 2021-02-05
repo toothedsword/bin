@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+
+use v5.10;
+
+# get the containerID name 
+my @rt = `docker ps -a`;
+my $t = 0;
+for (@rt) {
+    $t++;
+    if ($t > 1) {
+        my ($ci) = $_ =~ /(^[^\s]{6})/;
+        system("di $ci")
+    }
+}
+

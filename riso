@@ -1,0 +1,16 @@
+#!/bin/perl
+
+chdir '/dev/disk/by-path/';
+my @file = `ls -t`;
+
+my $file = $file[0];
+chomp($file);
+print($file);
+my $time = localtime();
+
+$time =~ s/[\s\:]+/-/g;
+my $iso = "/media/leon/iso-$time";
+
+system("mkdir $iso");
+system("mount $file $iso");
+

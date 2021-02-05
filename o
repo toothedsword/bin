@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+
+my $num = $ARGV[$#ARGV];
+
+chdir "/home/leon/doc/";
+open(my $f, "<data.doc");
+my @cts = <$f>;
+close($f);
+
+$num =~ s/#//;
+my $cmd = $cts[$num-1];
+`$cmd`;
+
