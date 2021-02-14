@@ -2,6 +2,6 @@
 
 my $t = shift;
 
-my ($f) = $t =~ /\((viewnior.*\.png)\)/;
+my ($f) = $t =~ /\(i{0,1}(viewnior.*\.png)\)/;
 system("$f") if defined($f);
 
