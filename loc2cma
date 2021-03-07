@@ -1,29 +1,58 @@
-#!/bin/perl
+#!/usr/bin/env perl
+# /**---------------------------------------------------------------------------
+#
+#         File: loc2cma
+#
+#        Usage: ./loc2cma
+#
+#  Description: 
+#
+#      Options: ---
+# Requirements: ---
+#         Bugs: ---
+#        Notes: ---
+#       Author: Liang Peng (...), pengliang@piesat
+# Organization: ...
+#      Version: 1.0
+#      Created: 2021年02月23日 10时33分07秒
+#     Revision: ---
+# ----------------------------------------------------------------------------*/
+
+use strict;
+use warnings;
+use utf8;
+
+my @file = @ARGV;
 
 my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
 $year = $year+1900;
-$mon ++; 
-my $time = "b$year-$mon-${mday}_$hour-$min-$sec";
+$mon ++;
+my $time = "$year-$mon-${mday}_$hour.$min.$sec";
+my $b = $time;
 
-my $b = shift;
-$b = $time if !defined($b);
-print("branch=$b\n");
+chdir "/home/leon/data/natapp-tmp";
+system("git pull");
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
+my $file = ' ';
+for my $f (@file) {
+    $file = "$file $f";
+}
 
-system("git init");
-system("git checkout -b $b");
-system("git add .");
-system("git commit -am \"\`date\`\"");
-
-system(" 
-ssh ads\@10.24.45.34 << HP
-mkdir /home/ads/ADS_loc2cma_$b
-cd /home/ads/ADS_loc2cma_$b
-git init 
-git remote add origin ssh://git\@git.piesat.cn:10002/QXYG/algorithm/ADS/ADS_cma2loc.git
-git pull origin $b
-ssh ads\@10.24.238.160 << ADS
-mkdir /mnt/swapdata/ADSCODE/ADS/ADS_loc2cma_$b
-ADS
-scp -r * ads\@10.24.238.160:/mnt/swapdata/ADSCODE/ADS/ADS_loc2cma_$b/
-HP
+system("
+ssh -p $p ads\@server.natappfree.cc << EHP
+mkdir /home/ads/data$b/
+EHP
 ");
+
+system("scp -r -P $p $file ads\@server.natappfree.cc:/home/ads/data$b/");
+
+system("
+ssh -p $p ads\@server.natappfree.cc << EHP
+scp -r /home/ads/data$b/ 10.24.237.31:/mnt/swapdata/ADSCODE/ADS/
+EHP
+");
+
+
+
+
