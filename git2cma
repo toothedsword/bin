@@ -1,0 +1,126 @@
+#!/usr/bin/env perl
+# /**---------------------------------------------------------------------------
+#
+#         File: git2cma
+#
+#        Usage: git2cma
+#
+#  Description:
+#
+#
+#      Options: ---
+# Requirements: ---
+#         Bugs: ---
+#        Notes: ---
+#       Author: Liang Peng (...), pengliang@piesat
+# Organization: ...
+#      Version: 1.0
+#      Created: 2021年02月02日 10时47分49秒
+#     Revision: ---
+# ----------------------------------------------------------------------------*/
+
+use strict;
+use warnings;
+use utf8;
+
+# parameter
+my $out = `pwd`;
+chomp($out);
+my $src = "/home/leon/tmp/";
+chdir "/home/leon/data/natapp-tmp" or die "natapp dir is not exist";
+my $rp = "origin";
+my $b = '';
+my $rmgit = 'yes';
+
+my @file = @ARGV;
+
+my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
+$year = $year+1900;
+$mon ++;
+my $time = "$year-$mon-${mday}_$hour.$min.$sec";
+
+chdir "/home/leon/data/natapp-tmp";
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
+my $file = ' ';
+for my $f (@file) {
+    if ($f =~ /^-/) {
+        if ($f =~ /^--outpath=/) {
+            ($out) = $f =~ /--outpath=(.*)$/;
+        }
+        if ($f =~ /^--rp=/) {
+            ($rp) = $f =~ /--rp=(.*)$/;
+        }
+        if ($f =~ /^--branch=/) {
+            ($b) = $f =~ /--branch=(.*)$/;
+        }
+        if ($f =~ /^--rmgit=/) {
+            ($rmgit) = $f =~ /--rmgit=(.*)$/;
+        }
+    } else {
+        $file = "$file $f";
+    }
+}
+$b = "$time$b";
+system("git pull $rp master");
+
+print("-----start git in local-----\n");
+system("
+mkdir /home/leon/data/loc2cma/ADS_loc2cma_$b
+cd /home/leon/data/loc2cma/ADS_loc2cma_$b
+git init
+git remote add origin ssh://git\@git.piesat.cn:27022/QXYG/algorithm/ADS/ADS_loc2cma.git 
+echo \"`date`\" > README 
+cp -r $file ./
+git add .
+git checkout -b $b
+git commit -am 'test'
+git push origin $b
+");
+
+print("-----start generate test_$b.sh-----\n");
+my $adsdir = "/mnt/swapdata/ADSCODE/ADS/loc2cma/$b";
+my $cmd = "mkdir /home/ads/ADS_loc2cma_$b/
+echo '++++++start'
+cd /home/ads/ADS_loc2cma_$b/
+git init
+git remote add origin ssh://git\@git.piesat.cn:10002/QXYG/algorithm/ADS/ADS_loc2cma.git
+echo '++++++start pull'
+git pull origin $b
+echo '++++++generate ads dir'
+ssh 10.24.237.31 << E31
+mkdir -p $adsdir
+E31
+echo '++++++start scp to ads'
+scp /home/ads/ADS_loc2cma_$b/* 10.24.237.31:$adsdir
+echo $b > ~/src/f$b
+echo '++++++finished'
+sleep 60
+";
+if ($rmgit eq 'yes') {
+    $cmd = "${cmd}\nrm -rf /home/ads/ADS_loc2cma_$b/\ndate\n";
+}
+open(my $sh, '>', "/home/leon/src/test_$b.sh") ;
+print $sh $cmd;
+close($sh);
+system("scp -P $p /home/leon/src/test_$b.sh ads\@server.natappfree.cc:~/src/");
+
+print("-----start run test_$b.sh, git pull in hp-----\n");
+system("
+ssh -p $p ads\@server.natappfree.cc << EHP
+nohup sh /home/ads/src/test_$b.sh > ~/src/test_$b.out 2>&1 & 
+EHP
+");
+
+print("-----start check if finished-----\n");
+while (1) {
+    my $s = system("scp -P $p ads\@server.natappfree.cc:/home/ads/src/f$b /home/leon/data/loc2cma/ 2>/dev/null");
+    if ($s == 0) {
+        print("\n-----finished-----\n");
+        die;
+    }
+    print(">");
+    sleep(10);
+}
+
+

@@ -1,0 +1,61 @@
+#!/usr/bin/env perl
+# /**---------------------------------------------------------------------------
+#
+#         File: cma2loc
+#
+#        Usage: cma2loc $file
+#
+#  Description: 
+#
+#      Options: ---
+# Requirements: ---
+#         Bugs: ---
+#        Notes: ---
+#       Author: Liang Peng (...), pengliang@piesat
+# Organization: ...
+#      Version: 1.0
+#      Created: 2021年02月23日 10时33分07秒
+#     Revision: ---
+# ----------------------------------------------------------------------------*/
+
+use strict;
+use warnings;
+use utf8;
+
+my @file = @ARGV;
+
+my $out = "/home/leon/data/cma2loc";
+chdir "/home/leon/data/natapp-tmp";
+
+system("git pull origin master");
+system("mkdir $out") if !-e $out;
+
+my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
+$year = $year+1900;
+$mon ++;
+my $time = "$year-$mon-${mday}_$hour.$min.$sec";
+my $b = $time;
+
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
+my $file = ' ';
+for my $f (@file) {
+    if ($f =~ /^-/) {
+        if ($f =~ /^--outpath=/) {
+            ($out) = $f =~ /--outpath=(.*)$/;
+        }
+    } else {
+        $file = "$file 10.24.237.31:$f";
+    }
+}
+
+system("
+ssh -p $p ads\@server.natappfree.cc << EHP
+mkdir /home/ads/data$b/
+scp -r $file /home/ads/data$b/
+cd /home/ads
+tar -cvf /home/ads/data$b.tar data$b
+EHP
+");
+
+system("scp -r -P $p ads\@server.natappfree.cc:/home/ads/data$b.tar $out/");

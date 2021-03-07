@@ -1,0 +1,134 @@
+#!/usr/bin/env perl
+# /**---------------------------------------------------------------------------
+#
+#         File: cma2git
+#
+#        Usage: cma2git $file
+#
+#  Description: 
+#
+#      Options: ---
+# Requirements: ---
+#         Bugs: ---
+#        Notes: ---
+#       Author: Liang Peng (...), pengliang@piesat
+# Organization: ...
+#      Version: 1.0
+#      Created: 2021年02月23日 10时33分07秒
+#     Revision: ---
+# ----------------------------------------------------------------------------*/
+
+use strict;
+use utf8;
+
+# parameter
+my $out = `pwd`;
+chomp($out);
+my $src = "/home/leon/tmp/";
+chdir "/home/leon/data/natapp-tmp" or die "natapp dir is not exist";
+my $rp = "origin";
+my $b = '';
+my $rmgit = 'yes';
+
+# time
+my @file = @ARGV;
+my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
+$year = $year+1900;
+$mon ++;
+my $time = "$year-$mon-${mday}_$hour.$min.$sec";
+
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
+my $file = ' ';
+for my $f (@file) {
+    if ($f =~ /^-/) {
+        if ($f =~ /^--outpath=/) {
+            ($out) = $f =~ /--outpath=(.*)$/;
+        }
+        if ($f =~ /^--rp=/) {
+            ($rp) = $f =~ /--rp=(.*)$/;
+        }
+        if ($f =~ /^--branch=/) {
+            ($b) = $f =~ /--branch=(.*)$/;
+        }
+        if ($f =~ /^--rmgit=/) {
+            ($rmgit) = $f =~ /--rmgit=(.*)$/;
+        }
+    } else {
+        $file = "$file 10.24.237.31:$f";
+    }
+}
+system("mkdir -p $out") if (!-e $out);
+system("mkdir -p $src") if (!-e $src);
+system("git pull $rp master");
+$b = "$time$b";
+
+my $cmd = "
+echo '-----start scp-----'
+date
+mkdir /home/ads/ADS_cma2loc_$b/
+cd /home/ads/ADS_cma2loc_$b
+echo \"`date`\" > README
+scp -r $file /home/ads/ADS_cma2loc_$b/
+echo '-----start git init-----'
+date
+git init
+git remote add origin ssh://git\@git.piesat.cn:10002/QXYG/algorithm/ADS/ADS_cma2loc.git
+git checkout -b $b
+echo '-----start git add-----'
+date
+git add .
+git commit -am 'init commit'
+echo '-----start push-----'
+date
+git push origin $b
+echo '-----end push-----'
+date
+";
+my $count = 100;
+for my $slp (1..$count) {
+    my $ls = $count*3-$slp*3;
+    $cmd = "${cmd}sleep 3\ndate\necho 'will remove ADS_cma2loc_$b in $ls seconds'\n";
+}
+if ($rmgit eq 'yes') {
+    $cmd = "${cmd}\necho 'rmING /home/ads/ADS_cma2loc_$b/'\nrm -rf /home/ads/ADS_cma2loc_$b/\ndate\necho '-----end rm-----'\n";
+}
+open(my $sh, '>', "$src/test_$b.sh") ;
+print $sh $cmd;
+close($sh);
+system("scp -P $p -o StrictHostKeyChecking=no $src/test_$b.sh ads\@server.natappfree.cc:~/src/");
+
+print("-----start scp and git from ads-----\n");
+system("
+ssh -p $p  -o StrictHostKeyChecking=no ads\@server.natappfree.cc << EHP
+nohup sh /home/ads/src/test_$b.sh > ~/src/cma2loc_$b.out 2>&1 & 
+EHP
+");
+
+print("-----git init in local-----\n");
+my $git = "$out/cma2loc_$b/";
+system("mkdir -p $git");
+chdir $git;
+system("git init");
+if ($rp eq 'out') {
+    system("git remote add origin ssh://git\@git.piesat.cn:10002/QXYG/algorithm/ADS/ADS_cma2loc.git");
+} else {
+    system("git remote add origin ssh://git\@git.piesat.cn:27022/QXYG/algorithm/ADS/ADS_cma2loc.git");
+}
+print("-----wait and git pull in local-----\n");
+my $k = 0;
+while (1) {
+    my $s = system("git pull origin $b 2>/dev/null");
+    if ($s == 0) {
+        print("\n-----finished-----\n");
+        if ($rmgit eq 'yes') {
+            system("rm -rf $git/.git");
+        }
+        print("data saved in $git\n");
+        goto end;
+    }
+    print(">") if $k % 10 == 0;
+    $k++;
+    sleep(1);
+}
+end:;

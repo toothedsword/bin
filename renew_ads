@@ -1,0 +1,41 @@
+#!/usr/bin/env perl
+# /**---------------------------------------------------------------------------
+#
+#         File: loc2cma
+#
+#        Usage: ./loc2cma
+#
+#  Description: 
+#
+#      Options: ---
+# Requirements: ---
+#         Bugs: ---
+#        Notes: ---
+#       Author: Liang Peng (...), pengliang@piesat
+# Organization: ...
+#      Version: 1.0
+#      Created: 2021年02月23日 10时33分07秒
+#     Revision: ---
+# ----------------------------------------------------------------------------*/
+
+use strict;
+use warnings;
+use utf8;
+
+my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
+$year = $year+1900;
+$mon ++;
+my $time = "$year-$mon-${mday}_$hour.$min.$sec";
+my $b = $time;
+
+chdir "/home/leon/data/natapp-tmp";
+system("git pull");
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
+
+system("
+ssh -p $p ads\@server.natappfree.cc << EHP
+update_git TphoonDet  10.24.237.161 
+EHP
+");
+
