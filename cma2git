@@ -25,10 +25,11 @@ use utf8;
 my $out = `pwd`;
 chomp($out);
 my $src = "/home/leon/tmp/";
-chdir "/home/leon/data/natapp-tmp" or die "natapp dir is not exist";
+my $natapp = "/home/leon/data/natapp-tmp";
 my $rp = "origin";
 my $b = '';
 my $rmgit = 'yes';
+my $time0 = time();
 
 # time
 my @file = @ARGV;
@@ -37,8 +38,7 @@ $year = $year+1900;
 $mon ++;
 my $time = "$year-$mon-${mday}_$hour.$min.$sec";
 
-my $t = `tail -n1 output`;
-my ($p) = $t =~ /:(\d\d\d\d\d) /;
+# read the parameter
 my $file = ' ';
 for my $f (@file) {
     if ($f =~ /^-/) {
@@ -58,11 +58,19 @@ for my $f (@file) {
         $file = "$file 10.24.237.31:$f";
     }
 }
-system("mkdir -p $out") if (!-e $out);
-system("mkdir -p $src") if (!-e $src);
-system("git pull $rp master");
+
+# update the parameter
 $b = "$time$b";
 
+# get the natapp port and generate the dir
+chdir $natapp or die "natapp dir is not exist";
+system("mkdir -p $out") if (!-e $out);
+system("mkdir -p $src") if (!-e $src);
+system("git pull $rp master > /dev/null");
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
+
+# generate the bash and scp it to HP
 my $cmd = "
 echo '-----start scp-----'
 date
@@ -85,9 +93,9 @@ git push origin $b
 echo '-----end push-----'
 date
 ";
-my $count = 100;
+my $count = 60;
 for my $slp (1..$count) {
-    my $ls = $count*3-$slp*3;
+    my $ls = $count*10-$slp*10;
     $cmd = "${cmd}sleep 3\ndate\necho 'will remove ADS_cma2loc_$b in $ls seconds'\n";
 }
 if ($rmgit eq 'yes') {
@@ -98,6 +106,7 @@ print $sh $cmd;
 close($sh);
 system("scp -P $p -o StrictHostKeyChecking=no $src/test_$b.sh ads\@server.natappfree.cc:~/src/");
 
+# run test_$b.sh in HP
 print("-----start scp and git from ads-----\n");
 system("
 ssh -p $p  -o StrictHostKeyChecking=no ads\@server.natappfree.cc << EHP
@@ -105,6 +114,7 @@ nohup sh /home/ads/src/test_$b.sh > ~/src/cma2loc_$b.out 2>&1 &
 EHP
 ");
 
+# generate git dir
 print("-----git init in local-----\n");
 my $git = "$out/cma2loc_$b/";
 system("mkdir -p $git");
@@ -115,20 +125,37 @@ if ($rp eq 'out') {
 } else {
     system("git remote add origin ssh://git\@git.piesat.cn:27022/QXYG/algorithm/ADS/ADS_cma2loc.git");
 }
-print("-----wait and git pull in local-----\n");
+
+# wait the push finished in HP then pull in local
+print("-----wait pushing finished-----\n");
 my $k = 0;
+$| = 1;
 while (1) {
-    my $s = system("git pull origin $b 2>/dev/null");
-    if ($s == 0) {
-        print("\n-----finished-----\n");
+    my $t = `git ls-remote origin $b`;
+    if ($t =~ /ref/) {
+        print("\n$t");
+        print("-----start pull in local-----\n");
+        my $s = system("git pull origin $b 2>/dev/null");
+        print("-----finish pull in local-----\n");
         if ($rmgit eq 'yes') {
             system("rm -rf $git/.git");
         }
         print("data saved in $git\n");
         goto end;
     }
-    print(">") if $k % 10 == 0;
+    # print(">") if $k % 10 == 0;
+    my $time = time();
+    my $dt = $time - $time0;
+    my ($h, $m, $s) = (0,0,0);
+    my $sh = sprintf("%02d", $dt/3600);
+    my $sm = sprintf("%02d", ($dt % 3600)/60);
+    my $ss = sprintf("%02d", $dt % 60);
+    my $ll = int(($dt % 60)/2);
+    $ll++;
+    print("\r($sh:$sm:$ss)[".("=" x ($ll-1)).">".("_" x (30-$ll)),"]");
     $k++;
     sleep(1);
 }
 end:;
+
+

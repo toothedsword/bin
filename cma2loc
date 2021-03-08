@@ -22,33 +22,50 @@ use strict;
 use warnings;
 use utf8;
 
+# parameter input
 my @file = @ARGV;
-
-my $out = "/home/leon/data/cma2loc";
-chdir "/home/leon/data/natapp-tmp";
-
-system("git pull origin master");
+my $out = `pwd`;
+chomp($out);
+my $natapp = "/home/leon/data/natapp-tmp";
+my $rp = "origin";
+my $b = '';
+my $rmgit = 'yes';
 system("mkdir $out") if !-e $out;
 
+# time
 my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
 $year = $year+1900;
 $mon ++;
 my $time = "$year-$mon-${mday}_$hour.$min.$sec";
-my $b = $time;
 
-my $t = `tail -n1 output`;
-my ($p) = $t =~ /:(\d\d\d\d\d) /;
 my $file = ' ';
 for my $f (@file) {
     if ($f =~ /^-/) {
         if ($f =~ /^--outpath=/) {
             ($out) = $f =~ /--outpath=(.*)$/;
         }
+        if ($f =~ /^--rp=/) {
+            ($rp) = $f =~ /--rp=(.*)$/;
+        }
+        if ($f =~ /^--branch=/) {
+            ($b) = $f =~ /--branch=(.*)$/;
+        }
+        if ($f =~ /^--natapp=/) {
+            ($natapp) = $f =~ /--natapp=(.*)$/;
+        }
+        if ($f =~ /^--rmgit=/) {
+            ($rmgit) = $f =~ /--rmgit=(.*)$/;
+        }
     } else {
         $file = "$file 10.24.237.31:$f";
     }
 }
+$b = "$time$b";
 
+chdir $natapp;
+system("git pull $rp master");
+my $t = `tail -n1 output`;
+my ($p) = $t =~ /:(\d\d\d\d\d) /;
 system("
 ssh -p $p ads\@server.natappfree.cc << EHP
 mkdir /home/ads/data$b/
