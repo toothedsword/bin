@@ -1,14 +1,14 @@
 #!/bin/perl
 
-chdir "/home/leon/data/natapp-tmp-out/";
-system("git pull");
+chdir "/home/leon/data/natapp-tmp/";
+system("git pull out master");
 
 my $t = `tail -n1 output`;
 my ($p) = $t =~ /:(\d\d\d\d\d) /;
 
 my $cmd = "ssh -p $p server.natappfree.cc";
 print $cmd,"\n",">" x 10,"\n";
-print ">" x 12,"\n";
+print ">" x 13,"\n";
 print ">" x 14,"\n";
-print ">" x 16,"\n";
+print ">" x 17,"\n";
 system($cmd);

@@ -1,9 +1,9 @@
-#!/usr/bin/env perl
-# /**---------------------------------------------------------------------------
+#!/usr/bin/env perl  
+# {{{ /**-----------------------------------------------------------------------
 #
 #         File: cma2git
 #
-#        Usage: cma2git $file
+#        Usage: cma2git $file -Options=...
 #
 #  Description: 
 #
@@ -11,7 +11,7 @@
 # Requirements: ---
 #         Bugs: ---
 #        Notes: ---
-#       Author: Liang Peng (...), pengliang@piesat
+#       Author: Liang Peng (...), pengliang@piesat.cn
 # Organization: ...
 #      Version: 1.0
 #      Created: 2021年02月23日 10时33分07秒
@@ -19,58 +19,94 @@
 # ----------------------------------------------------------------------------*/
 
 use strict;
-use utf8;
+use utf8; # }}}
 
-# parameter
+# set parameter
+# {{{
 my $out = `pwd`;
 chomp($out);
-my $src = "/home/leon/tmp/";
 my $natapp = "/home/leon/data/natapp-tmp";
 my $rp = "origin";
 my $b = '';
 my $rmgit = 'yes';
-my $time0 = time();
+my $tunel = 'notfree';
+my $p = 3377;
+my $server = 'toothedsword.natapp1.cc';
+my $src;
+# }}}
 
-# time
+# read input file
+# {{{
 my @file = @ARGV;
-my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
-$year = $year+1900;
-$mon ++;
-my $time = "$year-$mon-${mday}_$hour.$min.$sec";
-
-# read the parameter
 my $file = ' ';
 for my $f (@file) {
     if ($f =~ /^-/) {
-        if ($f =~ /^--outpath=/) {
-            ($out) = $f =~ /--outpath=(.*)$/;
+        if ($f =~ /^-outpath=/) {
+            ($out) = $f =~ /-outpath=(.*)$/;
         }
-        if ($f =~ /^--rp=/) {
-            ($rp) = $f =~ /--rp=(.*)$/;
+        if ($f =~ /^-o=/) {
+            ($out) = $f =~ /-o=(.*)$/;
         }
-        if ($f =~ /^--branch=/) {
-            ($b) = $f =~ /--branch=(.*)$/;
+        if ($f =~ /^-rp=/) {
+            ($rp) = $f =~ /-rp=(.*)$/;
         }
-        if ($f =~ /^--rmgit=/) {
-            ($rmgit) = $f =~ /--rmgit=(.*)$/;
+        if ($f =~ /^-r=/) {
+            ($rp) = $f =~ /-r=(.*)$/;
+        }
+        if ($f =~ /^-branch=/) {
+            ($b) = $f =~ /-branch=(.*)$/;
+        }
+        if ($f =~ /^-b=/) {
+            ($b) = $f =~ /-b=(.*)$/;
+        }
+        if ($f =~ /^-rmgit=/) {
+            ($rmgit) = $f =~ /-rmgit=(.*)$/;
+        }
+        if ($f =~ /^-d=/) {
+            ($rmgit) = $f =~ /-d=(.*)$/;
+        }
+        if ($f =~ /^-tunel=/) {
+            ($tunel) = $f =~ /-tunel=(.*)$/;
+        }
+        if ($f =~ /^-t=/) {
+            ($tunel) = $f =~ /-t=(.*)$/;
+        }
+        if ($f =~ /^-src=/) {
+            ($src) = $f =~ /-src=(.*)$/;
+        }
+        if ($f =~ /^-s=/) {
+            ($src) = $f =~ /-s=(.*)$/;
         }
     } else {
         $file = "$file 10.24.237.31:$f";
     }
 }
+# }}}
 
-# update the parameter
+# update the parameter and generate the dir
+# {{{
+my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
+$year = $year+1900;
+$mon ++;
+my $time = "$year-$mon-${mday}_$hour.$min.$sec";
 $b = "$time$b";
-
-# get the natapp port and generate the dir
-chdir $natapp or die "natapp dir is not exist";
 system("mkdir -p $out") if (!-e $out);
+$src = $out if !defined($src);
 system("mkdir -p $src") if (!-e $src);
-system("git pull $rp master > /dev/null");
-my $t = `tail -n1 output`;
-my ($p) = $t =~ /:(\d\d\d\d\d) /;
+# }}}
 
-# generate the bash and scp it to HP
+# get the natapp port
+# {{{
+if ($tunel eq 'free') {
+    chdir $natapp or die "natapp dir is not exist";
+    system("git pull $rp master");
+    my $t = `tail -n1 output`;
+    ($p) = $t =~ /:(\d\d\d\d\d) /;
+    $server = 'server.natappfree.cc';
+} # }}}
+
+# generate the cmd for Git in HP
+# {{{
 my $cmd = "
 echo '-----start scp-----'
 date
@@ -93,28 +129,36 @@ git push origin $b
 echo '-----end push-----'
 date
 ";
-my $count = 60;
+# }}}
+
+# update the cmd for RM Git
+# {{{
+my $count = 10;
+my $it = 60;
 for my $slp (1..$count) {
-    my $ls = $count*10-$slp*10;
-    $cmd = "${cmd}sleep 3\ndate\necho 'will remove ADS_cma2loc_$b in $ls seconds'\n";
+    my $ls = $count*$it-$slp*$it;
+    $cmd = "${cmd}sleep $it\ndate\necho 'will remove ADS_cma2loc_$b in $ls seconds'\n";
 }
 if ($rmgit eq 'yes') {
     $cmd = "${cmd}\necho 'rmING /home/ads/ADS_cma2loc_$b/'\nrm -rf /home/ads/ADS_cma2loc_$b/\ndate\necho '-----end rm-----'\n";
 }
+
+# generate the test.sh and send to the HP and run
 open(my $sh, '>', "$src/test_$b.sh") ;
 print $sh $cmd;
 close($sh);
-system("scp -P $p -o StrictHostKeyChecking=no $src/test_$b.sh ads\@server.natappfree.cc:~/src/");
+system("scp -P $p -o StrictHostKeyChecking=no $src/test_$b.sh ads\@$server:~/src/");
 
-# run test_$b.sh in HP
 print("-----start scp and git from ads-----\n");
 system("
-ssh -p $p  -o StrictHostKeyChecking=no ads\@server.natappfree.cc << EHP
+ssh -p $p  -o StrictHostKeyChecking=no ads\@$server << EHP
 nohup sh /home/ads/src/test_$b.sh > ~/src/cma2loc_$b.out 2>&1 & 
 EHP
 ");
+# }}}
 
-# generate git dir
+# generate Git dir
+# {{{
 print("-----git init in local-----\n");
 my $git = "$out/cma2loc_$b/";
 system("mkdir -p $git");
@@ -125,11 +169,13 @@ if ($rp eq 'out') {
 } else {
     system("git remote add origin ssh://git\@git.piesat.cn:27022/QXYG/algorithm/ADS/ADS_cma2loc.git");
 }
+# }}}
 
 # wait the push finished in HP then pull in local
+# {{{
 print("-----wait pushing finished-----\n");
-my $k = 0;
 $| = 1;
+my $time0 = time();
 while (1) {
     my $t = `git ls-remote origin $b`;
     if ($t =~ /ref/) {
@@ -143,7 +189,6 @@ while (1) {
         print("data saved in $git\n");
         goto end;
     }
-    # print(">") if $k % 10 == 0;
     my $time = time();
     my $dt = $time - $time0;
     my ($h, $m, $s) = (0,0,0);
@@ -153,9 +198,7 @@ while (1) {
     my $ll = int(($dt % 60)/2);
     $ll++;
     print("\r($sh:$sm:$ss)[".("=" x ($ll-1)).">".("_" x (30-$ll)),"]");
-    $k++;
     sleep(1);
 }
 end:;
-
-
+# }}}

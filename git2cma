@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# /**---------------------------------------------------------------------------
+# /**{{{------------------------------------------------------------------------
 #
 #         File: git2cma
 #
@@ -21,55 +21,91 @@
 
 use strict;
 use warnings;
-use utf8;
+use utf8;  # }}}
 
-# parameter
-my $out = `pwd`;
-chomp($out);
-my $src = "/home/leon/tmp/";
-chdir "/home/leon/data/natapp-tmp" or die "natapp dir is not exist";
+# set parameter
+# {{{
+my $out = "/mnt/swapdata/ADSCODE/ADS/loc2cma/";
+my $pwd = `pwd`;
+chomp($pwd);
+my $ldir = $pwd;
+my $src = $ldir;
 my $rp = "origin";
 my $b = '';
 my $rmgit = 'yes';
+my $natapp = "/home/leon/data/natapp-tmp";
+my $tunel = 'notfree';
+my $p = 3377;
+my $server = 'toothedsword.natapp1.cc';
+# }}}
 
+# read input file
+# {{{
 my @file = @ARGV;
+my $file = ' ';
+for my $f (@file) {
+    if ($f =~ /^-/) {
+        if ($f =~ /^-o.*=/) {
+            ($out) = $f =~ /-o.*=(.*)$/;
+        }
+        if ($f =~ /^-rp=/) {
+            ($rp) = $f =~ /-rp=(.*)$/;
+        }
+        if ($f =~ /^-r=/) {
+            ($rp) = $f =~ /-r=(.*)$/;
+        }
+        if ($f =~ /^-branch=/) {
+            ($b) = $f =~ /-branch=(.*)$/;
+        }
+        if ($f =~ /^-b=/) {
+            ($b) = $f =~ /-b=(.*)$/;
+        }
+        if ($f =~ /^-l.*=/) {
+            ($ldir) = $f =~ /-l.*=(.*)$/;
+        }
+        if ($f =~ /^-rmgit=/) {
+            ($rmgit) = $f =~ /-rmgit=(.*)$/;
+        }
+    } else {
+        if ($f =~ /^[\/\~]/) {
+            $file = "$file $f";
+        } else {
+            $file = "$file '$pwd/$f'";
+        }
+    }
+}
+# }}}
 
+# update the parameter
+# {{{
 my ($sec,$min,$hour,$mday,$mon,$year) = localtime();
 $year = $year+1900;
 $mon ++;
 my $time = "$year-$mon-${mday}_$hour.$min.$sec";
-
-chdir "/home/leon/data/natapp-tmp";
-my $t = `tail -n1 output`;
-my ($p) = $t =~ /:(\d\d\d\d\d) /;
-my $file = ' ';
-for my $f (@file) {
-    if ($f =~ /^-/) {
-        if ($f =~ /^--outpath=/) {
-            ($out) = $f =~ /--outpath=(.*)$/;
-        }
-        if ($f =~ /^--rp=/) {
-            ($rp) = $f =~ /--rp=(.*)$/;
-        }
-        if ($f =~ /^--branch=/) {
-            ($b) = $f =~ /--branch=(.*)$/;
-        }
-        if ($f =~ /^--rmgit=/) {
-            ($rmgit) = $f =~ /--rmgit=(.*)$/;
-        }
-    } else {
-        $file = "$file $f";
-    }
-}
 $b = "$time$b";
-system("git pull $rp master");
+$src = $ldir;
+# }}}
 
+# get the natapp port
+# {{{
+if ($tunel eq 'free') {
+    chdir $natapp or die "natapp dir is not exist";
+    system("git pull $rp master");
+    my $t = `tail -n1 output`;
+    ($p) = $t =~ /:(\d\d\d\d\d) /;
+    $server = 'server.natappfree.cc';
+} # }}}
+
+# git in local
+# {{{
+my $labport = 27022;
+$labport = 10002 if $rp eq 'out';
 print("-----start git in local-----\n");
 system("
-mkdir /home/leon/data/loc2cma/ADS_loc2cma_$b
-cd /home/leon/data/loc2cma/ADS_loc2cma_$b
+mkdir -p $ldir/ADS_loc2cma_$b
+cd $ldir/ADS_loc2cma_$b
 git init
-git remote add origin ssh://git\@git.piesat.cn:27022/QXYG/algorithm/ADS/ADS_loc2cma.git 
+git remote add origin ssh://git\@git.piesat.cn:$labport/QXYG/algorithm/ADS/ADS_loc2cma.git 
 echo \"`date`\" > README 
 cp -r $file ./
 git add .
@@ -77,9 +113,15 @@ git checkout -b $b
 git commit -am 'test'
 git push origin $b
 ");
+if ($rmgit eq 'yes') {
+    system("rm -rf $ldir/ADS_loc2cma_$b");
+}
+# }}}
 
+# generate test_*.sh and send to HP
+# {{{
 print("-----start generate test_$b.sh-----\n");
-my $adsdir = "/mnt/swapdata/ADSCODE/ADS/loc2cma/$b";
+my $adsdir = "$out/$b";
 my $cmd = "mkdir /home/ads/ADS_loc2cma_$b/
 echo '++++++start'
 cd /home/ads/ADS_loc2cma_$b/
@@ -92,35 +134,56 @@ ssh 10.24.237.31 << E31
 mkdir -p $adsdir
 E31
 echo '++++++start scp to ads'
-scp /home/ads/ADS_loc2cma_$b/* 10.24.237.31:$adsdir
+scp -r /home/ads/ADS_loc2cma_$b/* 10.24.237.31:$adsdir
 echo $b > ~/src/f$b
 echo '++++++finished'
-sleep 60
+sleep 600
 ";
 if ($rmgit eq 'yes') {
-    $cmd = "${cmd}\nrm -rf /home/ads/ADS_loc2cma_$b/\ndate\n";
+    $cmd = "${cmd}
+    rm -rf /home/ads/ADS_loc2cma_$b/
+    date
+    ";
 }
-open(my $sh, '>', "/home/leon/src/test_$b.sh") ;
+open(my $sh, '>', "$src/test_$b.sh") ;
 print $sh $cmd;
 close($sh);
-system("scp -P $p /home/leon/src/test_$b.sh ads\@server.natappfree.cc:~/src/");
+system("scp -P $p $src/test_$b.sh ads\@$server:~/src/");
+# }}}
 
+# run test.sh in HP
+# {{{
 print("-----start run test_$b.sh, git pull in hp-----\n");
 system("
-ssh -p $p ads\@server.natappfree.cc << EHP
+ssh -p $p ads\@$server << EHP
 nohup sh /home/ads/src/test_$b.sh > ~/src/test_$b.out 2>&1 & 
 EHP
 ");
+# }}}
 
+# check if finished
+# {{{
 print("-----start check if finished-----\n");
+$| = 1;
+my $time0 = time();
 while (1) {
-    my $s = system("scp -P $p ads\@server.natappfree.cc:/home/ads/src/f$b /home/leon/data/loc2cma/ 2>/dev/null");
-    if ($s == 0) {
-        print("\n-----finished-----\n");
-        die;
+    my $scp = system("scp -P $p ads\@$server:/home/ads/src/f$b $src >/dev/null 2>&1");
+    if (-e "$src/f$b") {
+        print("\ndata upload to $adsdir\n");
+        goto end;
     }
-    print(">");
-    sleep(10);
+    my $time = time();
+    my $dt = $time - $time0;
+    my ($h, $m, $s) = (0,0,0);
+    my $sh = sprintf("%02d", $dt/3600);
+    my $sm = sprintf("%02d", ($dt % 3600)/60);
+    my $ss = sprintf("%02d", $dt % 60);
+    my $ll = int(($dt % 60)/2);
+    $ll++;
+    print("\r($sh:$sm:$ss)[".("=" x ($ll-1)).">".("_" x (30-$ll)),"]");
+    sleep(1);
 }
 
-
+print("\nsomething wrong\n");
+end:;
+# }}}

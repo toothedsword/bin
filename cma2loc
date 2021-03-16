@@ -41,20 +41,23 @@ my $time = "$year-$mon-${mday}_$hour.$min.$sec";
 my $file = ' ';
 for my $f (@file) {
     if ($f =~ /^-/) {
-        if ($f =~ /^--outpath=/) {
-            ($out) = $f =~ /--outpath=(.*)$/;
+        if ($f =~ /^-outpath=/) {
+            ($out) = $f =~ /-outpath=(.*)$/;
         }
-        if ($f =~ /^--rp=/) {
-            ($rp) = $f =~ /--rp=(.*)$/;
+        if ($f =~ /^-o=/) {
+            ($out) = $f =~ /-o=(.*)$/;
         }
-        if ($f =~ /^--branch=/) {
-            ($b) = $f =~ /--branch=(.*)$/;
+        if ($f =~ /^-rp=/) {
+            ($rp) = $f =~ /-rp=(.*)$/;
         }
-        if ($f =~ /^--natapp=/) {
-            ($natapp) = $f =~ /--natapp=(.*)$/;
+        if ($f =~ /^-branch=/) {
+            ($b) = $f =~ /-branch=(.*)$/;
         }
-        if ($f =~ /^--rmgit=/) {
-            ($rmgit) = $f =~ /--rmgit=(.*)$/;
+        if ($f =~ /^-natapp=/) {
+            ($natapp) = $f =~ /-natapp=(.*)$/;
+        }
+        if ($f =~ /^-rmgit=/) {
+            ($rmgit) = $f =~ /-rmgit=(.*)$/;
         }
     } else {
         $file = "$file 10.24.237.31:$f";
